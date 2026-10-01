@@ -1,0 +1,34 @@
+name: 'weather_analytics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'weather_analytics'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+snapshot-paths: ["snapshots"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  wet_day_threshold_mm: 1.0   # WMO/ETCCDI "wet day": precipitation >= 1 mm
+  min_baseline_days: 20       # minimum observed days needed in a 30-day window
+
+models:
+  weather_analytics:
+    staging:
+      +materialized: view
+    analytics:
+      +materialized: table
+
+seeds:
+  weather_analytics:
+    wmo_weather_codes:
+      +column_types:
+        weather_code: integer
+        description: varchar(100)
+        category: varchar(30)

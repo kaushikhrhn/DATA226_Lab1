@@ -1,0 +1,11 @@
+﻿.venv/
+**pycache**/
+**/__pycache__/
+*.pyc
+.DS_Store
+__MACOSX/
+.env
+keys/
+logs/
+target/
+dbt_packages/

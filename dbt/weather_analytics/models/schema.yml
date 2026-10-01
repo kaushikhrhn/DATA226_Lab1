@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: stg_weather_daily
+    description: "Cleaned raw weather, one row per (city, date). View."
+    columns:
+      - name: weather_key
+        description: "Surrogate key city|YYYY-MM-DD"
+        data_tests:
+          - unique
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: date
+        data_tests:
+          - not_null
+      - name: temp_mean_c
+        description: "Daily mean temperature (API value, or (max+min)/2 if missing)"
+      - name: is_wet_day
+        description: "precipitation_mm >= var('wet_day_threshold_mm') (1 mm)"
+
+  - name: weather_daily_metrics
+    description: "Daily analytics table per city: moving averages, temperature anomaly, rolling rainfall, dry-spell length."
+    columns:
+      - name: weather_key
+        data_tests:
+          - unique
+          - not_null
+      - name: city
+        data_tests:
+          - not_null
+      - name: date
+        data_tests:
+          - not_null
+      - name: is_forecast
+        description: "TRUE for today and future days (forecast), FALSE for past days"
+        data_tests:
+          - not_null
+      - name: is_missing_day
+        description: "TRUE if the calendar day had no row in RAW (filled by the date spine)"
+        data_tests:
+          - not_null
+      - name: temp_mean_ma_7d_c
+        description: "7-day moving average of daily mean temperature (C)"
+      - name: temp_mean_ma_30d_c
+        description: "30-day moving average of daily mean temperature (C)"
+      - name: temp_baseline_30d_c
+        description: "Average daily mean temperature of the 30 days before this day (C)"
+      - name: temp_anomaly_c
+        description: "temp_mean_c - temp_baseline_30d_c (C). Positive = warmer than recent normal"
+      - name: temp_anomaly_zscore
+        description: "Anomaly divided by the baseline standard deviation"
+      - name: precip_rolling_7d_mm
+        description: "Total precipitation over the last 7 days (mm)"
+      - name: precip_rolling_30d_mm
+        description: "Total precipitation over the last 30 days (mm)"
+      - name: wet_days_30d
+        description: "Number of wet days (>= 1 mm) in the last 30 days"
+      - name: dry_spell_length_days
+        description: "Consecutive dry days ending on this day (0 on a wet day)"
+
+  - name: weather_city_summary
+    description: "One row per city with KPI values (last 30 observed days + 7-day forecast)."
+    columns:
+      - name: city
+        data_tests:
+          - unique
+          - not_null
+      - name: last_observed_date
+        data_tests:
+          - not_null
+
+seeds:
+  - name: wmo_weather_codes
+    description: "WMO weather interpretation codes used by Open-Meteo"
+    columns:
+      - name: weather_code
+        data_tests:
+          - unique
+          - not_null

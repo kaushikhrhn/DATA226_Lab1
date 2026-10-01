@@ -1,0 +1,22 @@
+# Credentials come from environment variables.
+# - Inside Airflow: weather_dbt_elt.py renders them from the `snowflake_conn` connection.
+# - On your laptop: export the same DBT_* variables (see README.md) and run
+#   dbt debug --profiles-dir .
+weather_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('DBT_ACCOUNT') }}"
+      user: "{{ env_var('DBT_USER') }}"
+      role: "{{ env_var('DBT_ROLE', 'ACCOUNTADMIN') }}"
+      database: "{{ env_var('DBT_DATABASE', 'DEMO_DB') }}"
+      warehouse: "{{ env_var('DBT_WAREHOUSE', 'COMPUTE_WH') }}"
+      schema: analytics
+      threads: 1
+      # Password auth when no private key is set; key-pair auth otherwise
+      # (with key-pair auth, the connection's Password field holds the key passphrase).
+      password: "{{ '' if (env_var('DBT_PRIVATE_KEY_PATH', '') or env_var('DBT_PRIVATE_KEY', '')) else env_var('DBT_PASSWORD', '') }}"
+      private_key_path: "{{ env_var('DBT_PRIVATE_KEY_PATH', '') }}"
+      private_key: "{{ env_var('DBT_PRIVATE_KEY', '') }}"
+      private_key_passphrase: "{{ env_var('DBT_PASSWORD', '') if (env_var('DBT_PRIVATE_KEY_PATH', '') or env_var('DBT_PRIVATE_KEY', '')) else '' }}"

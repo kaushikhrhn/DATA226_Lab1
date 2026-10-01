@@ -22,8 +22,9 @@ Task flow
 get_cities -> extract[city] -> transform[city] -> load (all cities, 1 transaction)
            -> trigger_dbt_elt (starts DAG 2: weather_dbt_elt)
 """
-from datetime import date, datetime, timedelta, timezone
+
 import logging
+from datetime import date, datetime, timedelta, timezone
 
 import requests
 from airflow import DAG
@@ -91,14 +92,18 @@ def get_cities() -> list:
     cities = Variable.get("weather_cities", deserialize_json=True)
 
     if not isinstance(cities, list) or len(cities) < 2:
-        raise ValueError("Variable `weather_cities` must be a JSON list with at least 2 cities")
+        raise ValueError(
+            "Variable `weather_cities` must be a JSON list with at least 2 cities"
+        )
     names = [c.get("city") for c in cities]
     if len(set(names)) != len(names):
         raise ValueError(f"Duplicate city names in `weather_cities`: {names}")
     for c in cities:
         if not c.get("city"):
             raise ValueError(f"City entry without a name: {c}")
-        if not (-90 <= float(c["latitude"]) <= 90 and -180 <= float(c["longitude"]) <= 180):
+        if not (
+            -90 <= float(c["latitude"]) <= 90 and -180 <= float(c["longitude"]) <= 180
+        ):
             raise ValueError(f"Invalid coordinates for {c['city']}: {c}")
 
     log.info("Cities to load: %s", names)
@@ -112,9 +117,15 @@ def extract(city: dict) -> dict:
         "latitude": city["latitude"],
         "longitude": city["longitude"],
         "daily": ",".join(DAILY_VARIABLES),
-        "past_days": int(Variable.get("weather_past_days", default_var=90)),         # API max 92
-        "forecast_days": int(Variable.get("weather_forecast_days", default_var=7)),  # API max 16
-        "timezone": city.get("timezone", "auto"),  # "auto" = local time zone of the coordinates
+        "past_days": int(
+            Variable.get("weather_past_days", default_var=90)
+        ),  # API max 92
+        "forecast_days": int(
+            Variable.get("weather_forecast_days", default_var=7)
+        ),  # API max 16
+        "timezone": city.get(
+            "timezone", "auto"
+        ),  # "auto" = local time zone of the coordinates
     }
     api_url = Variable.get("open_meteo_api_url", default_var=DEFAULT_API_URL)
 
@@ -126,8 +137,12 @@ def extract(city: dict) -> dict:
         )
 
     payload = response.json()
-    log.info("%s: received %d days (tz=%s)",
-             city["city"], len(payload["daily"]["time"]), payload.get("timezone"))
+    log.info(
+        "%s: received %d days (tz=%s)",
+        city["city"],
+        len(payload["daily"]["time"]),
+        payload.get("timezone"),
+    )
     return {
         "city": city["city"],
         "latitude": float(city["latitude"]),
@@ -147,7 +162,9 @@ def transform(api_response: dict) -> list:
     for api_name in DAILY_VARIABLES:
         values = daily.get(api_name)
         if values is None or len(values) != len(days):
-            raise ValueError(f"{api_response['city']}: '{api_name}' missing or wrong length")
+            raise ValueError(
+                f"{api_response['city']}: '{api_name}' missing or wrong length"
+            )
 
     # Days from 'today' (in the city's own time zone) onward are forecasts, not observations
     utc_offset = timedelta(seconds=api_response["utc_offset_seconds"])
@@ -167,8 +184,12 @@ def transform(api_response: dict) -> list:
         record["is_forecast"] = date.fromisoformat(day) >= local_today
         records.append(record)
 
-    log.info("%s: %d records (%d forecast)", api_response["city"], len(records),
-             sum(r["is_forecast"] for r in records))
+    log.info(
+        "%s: %d records (%d forecast)",
+        api_response["city"],
+        len(records),
+        sum(r["is_forecast"] for r in records),
+    )
     return records
 
 
@@ -201,7 +222,13 @@ def load(records_per_city) -> int:
                 f"DELETE FROM {TARGET_TABLE} WHERE city = %s AND date BETWEEN %s AND %s",
                 (city, start, end),
             )
-            log.info("%s: deleted %s existing rows for %s..%s", city, cur.rowcount, start, end)
+            log.info(
+                "%s: deleted %s existing rows for %s..%s",
+                city,
+                cur.rowcount,
+                start,
+                end,
+            )
 
         cur.executemany(INSERT_SQL, rows)
         log.info("Inserted %d rows", len(rows))
@@ -223,7 +250,9 @@ def load(records_per_city) -> int:
             loaded = cur.fetchone()[0]
             expected = sum(1 for r in records if r["city"] == city)
             if loaded != expected:
-                raise ValueError(f"{city}: expected {expected} rows in window, found {loaded}")
+                raise ValueError(
+                    f"{city}: expected {expected} rows in window, found {loaded}"
+                )
 
         cur.execute("COMMIT")
         log.info("COMMIT ok - %d rows for %s", len(rows), list(windows))
@@ -243,12 +272,16 @@ with DAG(
     start_date=datetime(2026, 9, 20),
     schedule="0 2 * * *",  # daily 02:00 UTC
     catchup=False,
-    max_active_runs=1,     # never two loads racing on the same table
-    default_args={"owner": "kaushik", "retries": 1, "retry_delay": timedelta(minutes=5)},
+    max_active_runs=1,  # never two loads racing on the same table
+    default_args={
+        "owner": "kaushik",
+        "retries": 1,
+        "retry_delay": timedelta(minutes=5),
+    },
     tags=["lab2", "weather", "ETL"],
 ) as dag:
     cities = get_cities()
-    api_responses = extract.expand(city=cities)          # one mapped task per city
+    api_responses = extract.expand(city=cities)  # one mapped task per city
     city_records = transform.expand(api_response=api_responses)
     loaded = load(city_records)
 

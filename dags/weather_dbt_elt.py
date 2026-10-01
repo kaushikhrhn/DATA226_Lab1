@@ -13,15 +13,14 @@ that turns RAW.WEATHER_DAILY into analytics tables for Tableau:
 * Airflow Variable: `weather_dbt_project_dir` = where the dbt project lives
   inside the container (default /opt/airflow/dbt/weather_analytics).
 """
+
 from datetime import datetime
 
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
-DBT_BIN = "/home/airflow/.local/bin/dbt"
-DBT_DIR = (
-    "{{ var.value.get('weather_dbt_project_dir', '/opt/airflow/dbt/weather_analytics') }}"
-)
+DBT_BIN = "dbt"
+DBT_DIR = "{{ var.value.get('weather_dbt_project_dir', '/opt/airflow/dbt/weather_analytics') }}"
 DBT_ARGS = f"--project-dir {DBT_DIR} --profiles-dir {DBT_DIR}"
 
 DBT_ENV = {
