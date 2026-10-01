@@ -166,7 +166,6 @@ services:
       - -c
       - airflow
 
-<<<<<<< HEAD
   # Local BI service. It uses a separate, persistent SQLite metadata database;
   # the existing Airflow/Postgres services and their metadata are unchanged.
   superset-init:
@@ -204,7 +203,3 @@ services:
 volumes:
   postgres-db-volume:
   superset-home:
-=======
-volumes:
-  postgres-db-volume:
->>>>>>> 80ec589866ad08073f1d11a71d6bb252c135220e
