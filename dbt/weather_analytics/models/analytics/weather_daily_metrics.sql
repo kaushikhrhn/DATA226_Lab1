@@ -44,7 +44,7 @@ calendar as (
     from city_bounds b
     join day_numbers n
       on n.day_offset <= datediff(day, b.first_date, b.last_date)
-
+s
 ),
 
 filled as (
