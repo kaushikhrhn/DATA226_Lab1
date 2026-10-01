@@ -1,17 +1,5 @@
 """
 Lab 2 - Weather Prediction Analytics | DAG 2 of 2: ELT with dbt
-===============================================================
-Triggered by `weather_etl` after a successful load. Runs the dbt project
-that turns RAW.WEATHER_DAILY into analytics tables for Tableau:
-
-    dbt seed -> dbt run -> dbt test -> dbt snapshot
-
-* Airflow Connection: Snowflake credentials come from `snowflake_conn` and are
-  rendered into environment variables at RUN time with Jinja
-  ({{ conn.snowflake_conn.* }}), then read by dbt/profiles.yml via env_var().
-  Works with password auth or key-pair auth (Private Key path or text).
-* Airflow Variable: `weather_dbt_project_dir` = where the dbt project lives
-  inside the container (default /opt/airflow/dbt/weather_analytics).
 """
 
 from datetime import datetime
