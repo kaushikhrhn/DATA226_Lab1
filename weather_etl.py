@@ -1,26 +1,5 @@
 """
 Lab 2 - Weather Prediction Analytics | DAG 1 of 2: ETL
-======================================================
-Open-Meteo Forecast API (2 cities)  ->  Snowflake DEMO_DB.RAW.WEATHER_DAILY
-
-How this DAG meets the lab requirements
----------------------------------------
-* Airflow Connection : `snowflake_conn` (Admin -> Connections) is used through
-                       SnowflakeHook, so no credentials live in this file.
-* Airflow Variables  : `weather_cities` (JSON list of cities), `weather_past_days`,
-                       `weather_forecast_days`, `open_meteo_api_url`
-                       (Admin -> Variables). Adding a 3rd city needs no code change.
-* Idempotency        : every run DELETEs exactly the (city, date) window it just
-                       re-fetched and INSERTs it again inside one transaction
-                       (BEGIN ... COMMIT). Running the DAG twice for the same day
-                       leaves the table identical - no duplicates.
-* try / except / raise: any error (API, SQL, data-quality check) -> ROLLBACK ->
-                       re-raise, so the task fails loudly and the table is untouched.
-
-Task flow
----------
-get_cities -> extract[city] -> transform[city] -> load (all cities, 1 transaction)
-           -> trigger_dbt_elt (starts DAG 2: weather_dbt_elt)
 """
 from datetime import date, datetime, timedelta, timezone
 import logging
